@@ -34,7 +34,7 @@ web-site where (after logging in, if necessary) they would just confirm the crea
 and then the web-site would redirect them back to a URL (based on the provided schema) that would re-open the app
 and provide the token, thus eliminating most steps.
 
-https://apps.savvyaviation.com/request-api-token/?app_name=MyAwesomeMobileApp&callback_url=myawesomeapp://
+https://apps.savvyaviation.com/account/request-api-token/?app_name=MyAwesomeMobileApp&callback_url=myawesomeapp://
 
 When the user clicks on the button on the resulting screen, the token will be created and they will be redirected to:
 
