@@ -40,9 +40,9 @@ When the user clicks on the button on the resulting screen, the token will be cr
 
 myawesomeapp://?token=XYZ
 
-The app_name is used to name the token. The tokens cane be seen on this page:
+The app_name is used to name the token. The tokens cane be seen on this page under the Third Party Apps tab:
 
-https://apps.savvyaviation.com/third-party-apps/
+https://apps.savvyaviation.com/account/
 
 Redirection Support
 ===================
