@@ -1,0 +1,19 @@
+meta {
+  name: Check Upload Status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{HOST}}/upload_status/{{file_id}}/?token={{token}}
+  body: none
+  auth: none
+}
+
+params:query {
+  token: {{token}}
+}
+
+vars:pre-request {
+  file_id: 
+}
