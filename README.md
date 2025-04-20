@@ -84,7 +84,7 @@ The endpoint returns an "application/json" response with a single object as show
 
 The "status" field will be "OK" if the upload was a success. The ID field is the database identifier of the uploaded file. The "logs" field is a relative URL (same base URL as the endpoint) that provides additional information about the endpoint.
 
-### V2 Upload API (Recommended)
+### V2 Upload API (BETA - Recommended)
 
 The V2 Upload API provides a more robust upload mechanism using S3 presigned URLs and improved status tracking. The process involves three steps:
 
@@ -105,7 +105,7 @@ The response will include a presigned S3 URL and the necessary fields to complet
 ```json
 {
   "status": "OK",
-  "id": [FILE_ID],
+  "id": "[FILE_ID]",
   "upload_url": "[UPLOAD_URL]",
   "fields": {
     "key": "[KEY]",
@@ -144,7 +144,7 @@ The 200 response will include the current status of the file processing:
 
 ```json
 {
-  "id": [FILE_ID],
+  "id": "[FILE_ID]",
   "status": "parsing",
 }
 ```
