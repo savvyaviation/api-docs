@@ -1,0 +1,50 @@
+meta {
+  name: Upload File Direct to S3
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{s3_url}}
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  key: {{s3_key}}
+  AWSAccessKeyId: {{aws_access_key_id}}
+  x-amz-security-token: {{aws_security_token}}
+  policy: {{policy}}
+  signature: {{signature}}
+  file: @file()
+}
+
+vars:pre-request {
+  s3_url: 
+  s3_key: 
+  aws_access_key_id: 
+  aws_security_token: 
+  policy: 
+  signature: 
+}
+
+docs {
+  title: "Upload File to S3"
+  description: |-
+    This request uploads a file to S3 using the presigned URL and fields received from the "Request Upload URL" endpoint.
+    
+    Before running this request, you need to:
+    1. Run the "Request Upload URL" request
+    2. Copy the values from the response into the environment variables:
+       - s3_url: The "upload_url" field from the response
+       - s3_key: The "key" field from the "fields" object in the response
+       - aws_access_key_id: The "AWSAccessKeyId" field from the "fields" object in the response
+       - aws_security_token: The security token field from the "fields" object in the response
+       - policy: The "policy" field from the "fields" object in the response
+       - signature: The "signature" field from the "fields" object in the response
+       - file_path: The path to the file you want to upload (e.g., "/path/to/your/file.JPI")
+    
+    If the upload is successful, S3 will return a 204 No Content response.
+    
+    After uploading the file, you can use the "Check Upload Status" request to check the status of the file processing.
+}

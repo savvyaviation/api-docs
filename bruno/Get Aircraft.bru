@@ -1,0 +1,15 @@
+meta {
+  name: Get Aircraft
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{HOST}}/get-aircraft/
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  token: {{token}}
+}

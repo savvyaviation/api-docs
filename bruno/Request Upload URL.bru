@@ -1,0 +1,21 @@
+meta {
+  name: Request Upload URL
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{HOST}}/request_upload_url/{{aircraft_id}}/
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  token: {{token}}
+  filename: {{filename}}
+}
+
+vars:pre-request {
+  aircraft_id: 
+  filename: test.csv
+}
