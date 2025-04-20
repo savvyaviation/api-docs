@@ -5,6 +5,7 @@ SavvyAviation provides an API for 3rd party developers to build applications tha
 ## Authentication
 
 It is not desirable for a user to provide their SavvyAviation credentials (i.e. email and password) to a third party service because that would:
+
 - Give the application full access to their account
 - Make it impossible to easily revoke access from that application
 
@@ -15,7 +16,7 @@ To get around this, Savvy provides a mechanism for users to create authenticatio
 
 To obtain a token, a user needs to perform the following steps:
 
-1. Log into https://apps.savvyaviation.com/
+1. Log into [SavvyAviation](https://apps.savvyaviation.com/)
 2. On the main menu select "Account", then "3rd Party Apps"
 3. At the bottom of the page, type in a name for the token. For example, the name could be the name of the app they will use this token with
 4. Click on "Save"
@@ -24,6 +25,7 @@ To obtain a token, a user needs to perform the following steps:
 ## Mobile Integration
 
 SavvyAviation provides a mechanism to allow for the automatic generation of these tokens. An app would issue an HTTP GET with two parameters:
+
 - One indicating the URL schema of the mobile application
 - Another one indicating the name of the app
 
@@ -56,7 +58,7 @@ It returns a "application/json" response, as an array of objects. The array may 
 Each object contains the registration and database id of the aircraft in question as show in the example below:
 
 ```json
-[{"registration_no": "N123", "id": 15678}]
+[{ "registration_no": "N123", "id": 15678 }]
 ```
 
 ## File Upload API
@@ -77,7 +79,7 @@ curl -X POST https://apps.savvyaviation.com/upload_files_api/15678/ --form "toke
 The endpoint returns an "application/json" response with a single object as shown in the example below:
 
 ```json
-{"status": "OK", "id": 550, "logs": "/file_parse_log/550"}
+{ "status": "OK", "id": 550, "logs": "/file_parse_log/550" }
 ```
 
 The "status" field will be "OK" if the upload was a success. The ID field is the database identifier of the uploaded file. The "logs" field is a relative URL (same base URL as the endpoint) that provides additional information about the endpoint.
@@ -148,6 +150,7 @@ The 200 response will include the current status of the file processing:
 ```
 
 Possible upload_status values include:
+
 - "init" - Initial state, workflow has not started yet
 - "waiting_for_file_upload" - Waiting for the file to be uploaded to S3
 - "file_not_found" (final state) - File not found in S3. This happens if 10 minutes pass and the file is not uploaded.
@@ -156,7 +159,7 @@ Possible upload_status values include:
 - "duplication" (final state) - File is an exact duplicate of another file for this aircraft. See logs for details using status call.
 - "parsing" - Parsing the file
 - "failed" (final state) - File processing failed. See logs for details using status call
-- "timeout" (final state) - Processing timed out. See logs for details using status call 
+- "timeout" (final state) - Processing timed out. See logs for details using status call
 - "done" (final state) - File processed successfully
 - "flight duplication" (final state) - Done, but some flights in the file were duplicates
 
