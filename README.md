@@ -65,26 +65,10 @@ Each object contains the registration and database id of the aircraft in questio
 
 SavvyAviation provides two mechanisms for uploading files:
 
-1. **V1 Upload API (Legacy)** - The original direct file upload method
-2. **V2 Upload API (BETA - Recommended)** - The new S3 presigned URL upload method with improved status tracking
+1. **V1 Upload API (Legacy)** - The original direct file upload method. No longer supported.
+2. **V2 Upload API (Recommended)** - The new S3 presigned URL upload method with improved status tracking
 
-### V1 Upload API (Legacy)
-
-The V1 "Upload Files" endpoint supports a POST operation with a URLEncoded parameter containing the token and another containing the file. The aircraft ID is included in the URL, as shown in the example below:
-
-```bash
-curl -X POST https://apps.savvyaviation.com/upload_files_api/15678/ --form "token=YOUR_API_TOKEN" --form "file=@/Users/flyer/development/engine_data_samples/JPI/U130214.JPI"
-```
-
-The endpoint returns an "application/json" response with a single object as shown in the example below:
-
-```json
-{ "status": "OK", "id": 550, "logs": "/file_parse_log/550" }
-```
-
-The "status" field will be "OK" if the upload was a success. The ID field is the database identifier of the uploaded file. The "logs" field is a relative URL (same base URL as the endpoint) that provides additional information about the endpoint.
-
-### V2 Upload API (BETA - Recommended)
+### V2 Upload API (Recommended)
 
 The V2 Upload API provides a more robust upload mechanism using S3 presigned URLs and improved status tracking. The process involves three steps:
 
