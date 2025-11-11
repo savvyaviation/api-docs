@@ -111,6 +111,7 @@ curl -X POST "[URL]" \
   -F "AWSAccessKeyId=[AWS_ACCESS_KEY_ID]" \
   -F "policy=[POLICY]" \
   -F "signature=[SIGNATURE]" \
+  _F "x-amz-security-token=[SECURITY TOKEN]" \
   -F "file=@/Users/flyer/development/engine_data_samples/JPI/U130214.JPI"
 ```
 
