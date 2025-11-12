@@ -144,10 +144,11 @@ Possible upload_status values include:
 - "unable_to_compute_hash" (final state) - Unable to compute file hash digest
 - "duplication" (final state) - File is an exact duplicate of another file for this aircraft. See logs for details using status call.
 - "parsing" - Parsing the file
-- "failed" (final state) - File processing failed. See logs for details using status call
+- "failure" (final state) - File processing failed. See logs for details using status call
 - "timeout" (final state) - Processing timed out. See logs for details using status call
-- "done" (final state) - File processed successfully
-- "flight duplication" (final state) - Done, but some flights in the file were duplicates
+- "success" (final state) - File processed successfully
+- "flight_duplication" (final state) - Done, but some flights in the file were duplicates
+- "partial (final state)"  - File processed. Some flights succeeded, some failed. See logs for details.
 
 ## Bruno API Examples
 
