@@ -122,7 +122,8 @@ A successful upload will return HTTP 204.
 After uploading the file, you can check the status of the processing using the file ID returned in step 1:
 
 ```bash
-curl -X GET "https://apps.savvyaviation.com/upload_status/[FILE_ID]/?token=YOUR_API_TOKEN"
+curl -X GET "https://apps.savvyaviation.com/upload_status/[FILE_ID]/" \
+  -H "Authorization: Bearer YOUR_API_TOKEN"
 ```
 
 The 200 response will include the current status of the file processing:
