@@ -1,0 +1,31 @@
+meta {
+  name: Upload Borescope Image to S3
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{upload_url}}
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: image/jpeg
+}
+
+vars:pre-request {
+  upload_url: 
+}
+
+docs {
+  title: "Upload Borescope Image to S3"
+  description: |-
+    Upload a borescope image directly to S3 using the pre-signed URL from "Get Signed Upload URL (Borescope)".
+    
+    Before running this request:
+    1. Run the "Get Signed Upload URL (Borescope)" request
+    2. Copy the "upload_url" from the response into the upload_url variable
+    3. Attach the image file as the request body (binary)
+    A successful upload returns HTTP 200.
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Create Borescope Image Set
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{HOST}}/api/borescope/create-image-set/
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  token: {{token}}
+  aircraft_id: {{aircraft_id}}
+}
+
+vars:pre-request {
+  aircraft_id: 
+}
