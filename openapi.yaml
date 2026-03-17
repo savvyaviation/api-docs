@@ -1,0 +1,554 @@
+openapi: 3.0.3
+info:
+  title: SavvyAviation API
+  description: API for uploading engine data files and managing borescope inspection images.
+  version: 1.0.0
+servers:
+  - url: https://apps.savvyaviation.com
+    description: Production
+
+paths:
+  /get-aircraft/:
+    post:
+      operationId: getAircraft
+      summary: Get user's aircraft
+      description: Retrieve list of aircraft the authenticated user can access.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: API authentication token
+      responses:
+        '200':
+          description: List of aircraft
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Aircraft database ID
+                    registration_no:
+                      type: string
+                      description: Aircraft registration number
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /request_upload_url/{aircraft_id}/:
+    post:
+      operationId: requestUploadUrl
+      summary: Request an upload URL
+      description: |
+        Request a pre-signed S3 URL for uploading an engine data file to a specific aircraft.
+        Use the returned URL and fields to upload the file directly to S3.
+      tags: [File Upload]
+      parameters:
+        - name: aircraft_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Aircraft database ID
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, filename]
+              properties:
+                token:
+                  type: string
+                  description: API authentication token
+                filename:
+                  type: string
+                  description: Name of the file to upload (e.g. U130214.JPI)
+      responses:
+        '200':
+          description: Pre-signed upload URL and S3 form fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /upload_status/{file_id}/:
+    get:
+      operationId: checkUploadStatus
+      summary: Check upload status
+      description: Check the processing status of an uploaded file.
+      tags: [File Upload]
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: File ID returned from request_upload_url
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: API authentication token
+      responses:
+        '200':
+          description: Current file processing status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: File ID
+                  status:
+                    $ref: '#/components/schemas/FileUploadStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/borescope/image-sets/:
+    post:
+      operationId: getBorescopeImageSets
+      summary: Get borescope image sets for aircraft
+      description: Retrieve all borescope image sets associated with a specific aircraft.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, aircraft_id]
+              properties:
+                token:
+                  type: string
+                  description: API authentication token
+                aircraft_id:
+                  type: integer
+                  description: Aircraft ID
+      responses:
+        '200':
+          description: List of image sets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image_sets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BorescopeImageSet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/borescope/create-image-set/:
+    post:
+      operationId: createBorescopeImageSet
+      summary: Create borescope image set
+      description: Initialize a new borescope image set for an aircraft.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, aircraft_id]
+              properties:
+                token:
+                  type: string
+                  description: API authentication token
+                aircraft_id:
+                  type: integer
+                  description: Aircraft ID
+                inspection_date:
+                  type: string
+                  format: date
+                  description: Date of the inspection (ISO 8601)
+                hobbs_hours:
+                  type: number
+                  description: Hobbs meter reading at time of inspection
+      responses:
+        '200':
+          description: Image set created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bis_id:
+                    type: integer
+                    description: Created image set ID
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/borescope/request-upload-url/:
+    post:
+      operationId: getBorescopeUploadUrl
+      summary: Get signed S3 URL for image upload
+      description: |
+        Request a pre-signed S3 URL for uploading a specific borescope image.
+        The image set must be in `in_progress` status.
+
+        If an image already exists for the given cylinder and view combination, the endpoint returns an error.
+        To overwrite, set `force` to `true`. The `other` view is exempt from duplicate checking —
+        multiple "other" images can be uploaded per cylinder without using force.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, bis_id, cylinder, view, filename, content_type]
+              properties:
+                token:
+                  type: string
+                  description: API authentication token
+                bis_id:
+                  type: integer
+                  description: Borescope image set ID
+                cylinder:
+                  type: integer
+                  description: Cylinder number (1-n based on engine)
+                view:
+                  type: string
+                  description: Borescope view slug
+                  enum:
+                    - piston-crown
+                    - exhaust-valve-head
+                    - exhaust-valve-seat
+                    - exhaust-valve-stem
+                    - intake-valve-head
+                    - intake-valve-seat
+                    - intake-valve-stem
+                    - cylinder-wall-12
+                    - cylinder-wall-3
+                    - cylinder-wall-6
+                    - cylinder-wall-9
+                    - other
+                filename:
+                  type: string
+                  description: Desired filename for the image
+                content_type:
+                  type: string
+                  description: MIME type of the image
+                  default: image/jpeg
+                force:
+                  type: boolean
+                  description: Set to true to overwrite an existing image for the same cylinder/view
+                  default: false
+      responses:
+        '200':
+          description: Pre-signed upload URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                    format: uri
+                    description: Pre-signed S3 URL (expires in 15 minutes)
+                  image_id:
+                    type: integer
+                    description: Image ID
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: URL expiration time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict — duplicate view or invalid status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                duplicate_view:
+                  summary: Duplicate view
+                  value:
+                    error: duplicate_view
+                    message: "An image already exists for cylinder 1, view piston-crown. Set force=true to overwrite."
+                invalid_status:
+                  summary: Invalid status
+                  value:
+                    error: invalid_status
+                    message: "Image uploads are only allowed when the image set is in_progress."
+
+  /api/borescope/request-analysis/:
+    post:
+      operationId: requestBorescopeAnalysis
+      summary: Request analysis
+      description: |
+        Submit a completed borescope image set for analysis.
+        Transitions the image set status from `in_progress` to `analysis_requested` and creates a support ticket.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, subject, body, aircraft_id, borescope_image_set_id]
+              properties:
+                token:
+                  type: string
+                  description: API authentication token
+                subject:
+                  type: string
+                  description: Ticket subject line
+                body:
+                  type: string
+                  description: Ticket body / client comments
+                aircraft_id:
+                  type: integer
+                  description: The aircraft the images belong to
+                borescope_image_set_id:
+                  type: integer
+                  description: The specific image set to analyze
+                priority:
+                  type: string
+                  description: Ticket priority
+                priority_explanation:
+                  type: string
+                  description: Why this priority was chosen
+      responses:
+        '200':
+          description: Analysis requested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [analysis_requested]
+                  ticket_id:
+                    type: integer
+                    description: Support ticket ID
+                  ticket_url:
+                    type: string
+                    format: uri
+                    description: URL to the support ticket
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - invalid_token
+            - not_found
+            - invalid_status
+            - duplicate_view
+            - validation_error
+            - forbidden
+        message:
+          type: string
+          description: Human-readable description of the error
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Request status
+          example: OK
+        id:
+          type: string
+          description: File ID for tracking upload status
+        upload_url:
+          type: string
+          format: uri
+          description: Pre-signed S3 URL for uploading
+        fields:
+          type: object
+          description: Fields to include in the S3 upload form
+          properties:
+            key:
+              type: string
+            AWSAccessKeyId:
+              type: string
+            x-amz-security-token:
+              type: string
+            policy:
+              type: string
+            signature:
+              type: string
+
+    FileUploadStatus:
+      type: string
+      description: Processing status of an uploaded file
+      enum:
+        - init
+        - waiting_for_file_upload
+        - file_not_found
+        - compute_hash_digest
+        - unable_to_compute_hash
+        - duplication
+        - parsing
+        - failure
+        - timeout
+        - success
+        - flight_duplication
+        - partial
+
+    BorescopeImageSet:
+      type: object
+      properties:
+        bis_id:
+          type: integer
+          description: Unique identifier
+        aircraft_id:
+          type: integer
+          description: Associated aircraft ID
+        tail_number:
+          type: string
+          description: Aircraft tail number
+        inspection_date:
+          type: string
+          format: date
+          description: Date of inspection (ISO 8601)
+        hobbs_hours:
+          type: number
+          description: Hobbs meter reading at time of inspection
+        borescope_model:
+          type: string
+          description: Borescope hardware model
+        status:
+          type: string
+          enum: [in_progress, analysis_requested, report_sent]
+          description: Current status of the image set
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        submitted_by_type:
+          type: string
+          enum: [owner, mechanic]
+        submitter_info:
+          type: object
+          description: Submitter details
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/BorescopeImage'
+
+    BorescopeImage:
+      type: object
+      properties:
+        image_id:
+          type: integer
+          description: Unique identifier
+        bis_id:
+          type: integer
+          description: Parent image set ID
+        cylinder:
+          type: integer
+          description: Cylinder number (1-n based on engine)
+        view:
+          type: string
+          description: Borescope view slug
+          enum:
+            - piston-crown
+            - exhaust-valve-head
+            - exhaust-valve-seat
+            - exhaust-valve-stem
+            - intake-valve-head
+            - intake-valve-seat
+            - intake-valve-stem
+            - cylinder-wall-12
+            - cylinder-wall-3
+            - cylinder-wall-6
+            - cylinder-wall-9
+            - other
+        filename:
+          type: string
+          description: Original filename
+        s3_key:
+          type: string
+          description: S3 storage key
+        upload_timestamp:
+          type: string
+          format: date-time
+          description: Upload time
+        metadata:
+          type: object
+          description: Image metadata
+
+  responses:
+    Unauthorized:
+      description: Invalid or expired token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: invalid_token
+            message: The provided token is invalid or expired.
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: not_found
+            message: The requested resource was not found.
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: validation_error
+            message: "A required field is missing or has an invalid value."
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: forbidden
+            message: You do not have permission to access this resource.

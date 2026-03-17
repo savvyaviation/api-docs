@@ -13,8 +13,11 @@ post {
 body:form-urlencoded {
   token: {{token}}
   aircraft_id: {{aircraft_id}}
+  inspection_date: {{inspection_date}}
+  ~hobbs_hours: {{hobbs_hours}}
 }
 
 vars:pre-request {
   aircraft_id: 
+  inspection_date: 2025-06-15
 }

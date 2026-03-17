@@ -214,10 +214,26 @@ curl -X POST https://apps.savvyaviation.com/api/borescope/image-sets/ \
 
 Initialize a new borescope image set for an aircraft.
 
+**Required fields:**
+
+| Field | Description |
+|---|---|
+| `token` | API authentication token |
+| `aircraft_id` | The aircraft to create the image set for |
+
+**Optional fields:**
+
+| Field | Description |
+|---|---|
+| `inspection_date` | Date of the inspection (ISO 8601 format) |
+| `hobbs_hours` | Hobbs meter reading at time of inspection |
+
 ```bash
 curl -X POST https://apps.savvyaviation.com/api/borescope/create-image-set/ \
   --form "token=YOUR_API_TOKEN" \
-  --form "aircraft_id=AIRCRAFT_ID"
+  --form "aircraft_id=AIRCRAFT_ID" \
+  --form "inspection_date=2025-06-15" \
+  --form "hobbs_hours=1523.4"
 ```
 
 **Response:**
@@ -234,7 +250,7 @@ curl -X POST https://apps.savvyaviation.com/api/borescope/create-image-set/ \
 
 Request a pre-signed S3 URL for uploading a specific borescope image. The image set must be in `in_progress` status.
 
-If an image already exists for the given `cylinder` and `view` combination, the endpoint returns an error. To overwrite an existing image, set `force` to `true`.
+If an image already exists for the given `cylinder` and `view` combination, the endpoint returns an error. To overwrite an existing image, set `force` to `true`. The `other` view is exempt from this check — multiple "other" images can be uploaded per cylinder without using `force`.
 
 See [Borescope Views](#borescope-views) for the list of valid `view` values.
 
@@ -332,7 +348,8 @@ curl -X POST https://apps.savvyaviation.com/api/borescope/request-analysis/ \
 ```json
 {
   "status": "analysis_requested",
-  "ticket_id": 5012
+  "ticket_id": 5012,
+  "ticket_url": "https://apps.savvyaviation.com/tickets/5012/"
 }
 ```
 
@@ -347,7 +364,8 @@ curl -X POST https://apps.savvyaviation.com/api/borescope/request-analysis/ \
 | `bis_id` | integer | Unique identifier |
 | `aircraft_id` | integer | Associated aircraft |
 | `tail_number` | string | Aircraft tail number |
-| `inspection_date` | timestamp | Date of inspection |
+| `inspection_date` | date | Date of inspection (ISO 8601) |
+| `hobbs_hours` | number | Hobbs meter reading at time of inspection (optional) |
 | `borescope_model` | string | Borescope hardware model |
 | `status` | enum | `in_progress`, `analysis_requested`, `report_sent` |
 | `created_at` | timestamp | Creation time |
@@ -386,6 +404,29 @@ Each cylinder has 12 standardized views. The `view` parameter in API requests mu
 | Cylinder Wall 9 | `cylinder-wall-9` |
 | Other | `other` |
 
+### Error Responses
+
+All borescope API endpoints return errors in a consistent format:
+
+```json
+{
+  "error": "error_code",
+  "message": "Human-readable description of what went wrong."
+}
+```
+
+| Error Code | HTTP Status | Description |
+|---|---|---|
+| `invalid_token` | 401 | The provided token is invalid or expired |
+| `not_found` | 404 | The requested resource (aircraft, image set, etc.) was not found |
+| `invalid_status` | 409 | The image set is not in the required status for this operation |
+| `duplicate_view` | 409 | An image already exists for this cylinder/view combination (use `force=true` to overwrite) |
+| `validation_error` | 400 | A required field is missing or has an invalid value |
+| `forbidden` | 403 | The user does not have permission to access this resource |
+
+### OpenAPI Specification
+
+The full machine-readable API specification is available at [openapi.yaml](openapi.yaml).
 
 ## Bruno API Examples
 
