@@ -1,0 +1,46 @@
+meta {
+  name: Get Signed Upload URL (Borescope)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{HOST}}/api/borescope/request-upload-url/
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  token: {{token}}
+  bis_id: {{bis_id}}
+  cylinder: {{cylinder}}
+  view: {{view}}
+  filename: {{filename}}
+  content_type: image/jpeg
+  force: false
+}
+
+vars:pre-request {
+  bis_id: 
+  cylinder: 1
+  view: piston-crown
+  filename: N123_CYL1_piston-crown.jpg
+}
+
+docs {
+  title: "Get Signed Upload URL (Borescope)"
+  description: |-
+    Request a pre-signed S3 URL for uploading a specific borescope image.
+    The image set must be in "in_progress" status.
+    
+    Parameters:
+    - bis_id: The borescope image set ID (integer, from Create Borescope Image Set)
+    - cylinder: Cylinder number (1-n based on engine)
+    - view: One of the 12 standardized borescope view slugs (e.g. piston-crown, exhaust-valve-head)
+    - filename: Desired filename for the image
+    - content_type: MIME type (typically image/jpeg)
+    - force: Set to "true" to overwrite an existing image for the same cylinder/view. Defaults to "false".
+    
+    If an image already exists for the same cylinder and view, the endpoint returns an error unless force=true.
+    If the image set is not in "in_progress" status, the endpoint returns an "invalid_status" error.
+}

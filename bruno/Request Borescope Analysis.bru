@@ -1,0 +1,45 @@
+meta {
+  name: Request Borescope Analysis
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{HOST}}/api/borescope/request-analysis/
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  token: {{token}}
+  subject: {{subject}}
+  body: {{body}}
+  aircraft_id: {{aircraft_id}}
+  borescope_image_set_id: {{bis_id}}
+  ~priority: {{priority}}
+  ~priority_explanation: {{priority_explanation}}
+}
+
+vars:pre-request {
+  bis_id: 
+  aircraft_id: 
+  subject: Annual borescope inspection
+  body: Please review all cylinders
+}
+
+docs {
+  title: "Request Borescope Analysis"
+  description: |-
+    Submit a completed borescope image set for analysis. This transitions the image set
+    status from "in_progress" to "analysis_requested" and creates a support ticket.
+    
+    Required fields:
+    - subject: Ticket subject line
+    - body: Ticket body / client comments
+    - aircraft_id: The aircraft the images belong to
+    - borescope_image_set_id: The specific image set to analyze
+    
+    Optional fields:
+    - priority: Ticket priority
+    - priority_explanation: Why this priority was chosen
+}
