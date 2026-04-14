@@ -33,6 +33,7 @@ paths:
                 type: array
                 items:
                   type: object
+                  required: [id, registration_no, eligibleForBorescopeAnalysis]
                   properties:
                     id:
                       type: integer
@@ -40,6 +41,30 @@ paths:
                     registration_no:
                       type: string
                       description: Aircraft registration number
+                    eligibleForBorescopeAnalysis:
+                      type: boolean
+                      description: Whether the aircraft owner's current subscription plan includes borescope image analysis
+                    serviceUpgradeUrl:
+                      type: string
+                      format: uri
+                      description: >
+                        URL where the user can upgrade their subscription to enable borescope analysis.
+                        Only present when eligibleForBorescopeAnalysis is false.
+                      example: https://apps.savvyaviation.com/account/plan/1234
+              examples:
+                eligible:
+                  summary: Aircraft eligible for borescope analysis
+                  value:
+                    - id: 1234
+                      registration_no: N12345
+                      eligibleForBorescopeAnalysis: true
+                ineligible:
+                  summary: Aircraft not eligible (includes upgrade URL)
+                  value:
+                    - id: 5678
+                      registration_no: N67890
+                      eligibleForBorescopeAnalysis: false
+                      serviceUpgradeUrl: https://apps.savvyaviation.com/account/plan/5678
         '401':
           $ref: '#/components/responses/Unauthorized'
 
