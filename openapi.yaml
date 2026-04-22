@@ -33,6 +33,7 @@ paths:
                 type: array
                 items:
                   type: object
+                  required: [id, registration_no, eligibleForBorescopeAnalysis]
                   properties:
                     id:
                       type: integer
@@ -40,6 +41,39 @@ paths:
                     registration_no:
                       type: string
                       description: Aircraft registration number
+                    eligibleForBorescopeAnalysis:
+                      type: boolean
+                      description: >
+                        Whether this aircraft is currently covered by a subscription plan
+                        that includes borescope image analysis (Analysis, QA, MX, or Prebuy).
+                        Clients should use this flag to decide whether to surface the
+                        "Request Analysis" action in their UI and to prompt the user to
+                        upgrade when it is `false`. Recomputed on every call, so the value
+                        reflects the aircraft's eligibility at request time.
+                    serviceUpgradeUrl:
+                      type: string
+                      format: uri
+                      description: >
+                        Deep link to the SavvyAviation web app plan page for this specific
+                        aircraft, where the owner can upgrade to a subscription that
+                        includes borescope analysis. Present if and only if
+                        `eligibleForBorescopeAnalysis` is `false`; when eligibility is
+                        `true`, the field is omitted entirely (not returned as `null`).
+                      example: https://apps.savvyaviation.com/account/plan/1234
+              examples:
+                eligible:
+                  summary: Aircraft eligible for borescope analysis
+                  value:
+                    - id: 1234
+                      registration_no: N12345
+                      eligibleForBorescopeAnalysis: true
+                ineligible:
+                  summary: Aircraft not eligible (includes upgrade URL)
+                  value:
+                    - id: 5678
+                      registration_no: N67890
+                      eligibleForBorescopeAnalysis: false
+                      serviceUpgradeUrl: https://apps.savvyaviation.com/account/plan/5678
         '401':
           $ref: '#/components/responses/Unauthorized'
 

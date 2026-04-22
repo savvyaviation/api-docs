@@ -55,10 +55,30 @@ curl -X POST https://apps.savvyaviation.com/get-aircraft/ --form "token=[YOUR_TO
 
 It returns a "application/json" response, as an array of objects. The array may be empty.
 
-Each object contains the registration and database id of the aircraft in question as show in the example below:
+Each object contains the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | integer | Database id of the aircraft. |
+| `registration_no` | string | Aircraft registration (tail number). |
+| `eligibleForBorescopeAnalysis` | boolean | Whether this aircraft is currently covered by a subscription plan that includes borescope image analysis (Analysis, QA, MX, or Prebuy). Clients should use this flag to decide whether to surface the "Request Analysis" action and to prompt the user to upgrade when it is `false`. Recomputed on every call, so the value reflects the aircraft's eligibility at request time. |
+| `serviceUpgradeUrl` | string (URI) | Deep link to the SavvyAviation web app plan page for this specific aircraft, where the owner can upgrade to a subscription that includes borescope analysis. Present **if and only if** `eligibleForBorescopeAnalysis` is `false`; when eligibility is `true`, the field is omitted entirely (not returned as `null`). |
+
+Example response when the aircraft is eligible for borescope analysis:
 
 ```json
-[{ "registration_no": "N123", "id": 15678 }]
+[{ "registration_no": "N123", "id": 15678, "eligibleForBorescopeAnalysis": true }]
+```
+
+Example response when the aircraft is not eligible:
+
+```json
+[{
+  "registration_no": "N123",
+  "id": 15678,
+  "eligibleForBorescopeAnalysis": false,
+  "serviceUpgradeUrl": "https://apps.savvyaviation.com/account/plan/15678"
+}]
 ```
 
 ## File Upload API
