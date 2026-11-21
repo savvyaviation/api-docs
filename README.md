@@ -47,13 +47,21 @@ Applications implementing the APIs in this document MUST support 301 and 302 HTT
 
 ## Get Aircraft Endpoint
 
-The "Get Aircraft" end-point supports a POST operation with a single URLEncoded parameter containing the token:
+The "Get Aircraft" end-point supports a POST operation with URLEncoded parameters:
+
+| Parameter | Required | Description |
+|---|---|---|
+| `token` | yes | The user's API token. |
+| `include_shared` | no | Set to `true` to also list aircraft that are shared with the user and that the user can upload borescope images to. Without it, only aircraft the user owns are listed. |
 
 ```bash
 curl -X POST https://apps.savvyaviation.com/get-aircraft/ --form "token=[YOUR_TOKEN]"
+
+# Also list aircraft shared with the user (for borescope uploads)
+curl -X POST https://apps.savvyaviation.com/get-aircraft/ --form "token=[YOUR_TOKEN]" --form "include_shared=true"
 ```
 
-It returns a "application/json" response, as an array of objects. The array may be empty.
+It returns a "application/json" response, as an array of objects. The array may be empty. Aircraft the user owns come first, followed by shared aircraft ordered by registration.
 
 Each object contains the following fields:
 
@@ -61,13 +69,14 @@ Each object contains the following fields:
 |---|---|---|
 | `id` | integer | Database id of the aircraft. |
 | `registration_no` | string | Aircraft registration (tail number). |
-| `eligibleForBorescopeAnalysis` | boolean | Whether this aircraft is currently covered by a subscription plan that includes borescope image analysis (Analysis, QA, MX, or Prebuy). Clients should use this flag to decide whether to surface the "Request Analysis" action and to prompt the user to upgrade when it is `false`. Recomputed on every call, so the value reflects the aircraft's eligibility at request time. |
-| `serviceUpgradeUrl` | string (URI) | Deep link to the SavvyAviation web app plan page for this specific aircraft, where the owner can upgrade to a subscription that includes borescope analysis. Present **if and only if** `eligibleForBorescopeAnalysis` is `false`; when eligibility is `true`, the field is omitted entirely (not returned as `null`). |
+| `accessType` | string | How the user has access to this aircraft. One of `owner`, `co_owner`, `service_center` or `shared`. See [Shared aircraft](#shared-aircraft). |
+| `eligibleForBorescopeAnalysis` | boolean | Whether the user can currently request borescope image analysis on this aircraft. This requires a subscription plan on the aircraft that includes borescope analysis (Analysis, QA, MX, or Prebuy). It is also `false` when the user's account type cannot request borescope analysis. Today that includes service-center technicians. Clients should use this flag to decide whether to show the "Request Analysis" action. The value is recomputed on every call, so it reflects eligibility at request time. |
+| `serviceUpgradeUrl` | string (URI) | Deep link to the SavvyAviation web app plan page for this specific aircraft, where the owner can upgrade to a subscription that includes borescope analysis. Present only when `eligibleForBorescopeAnalysis` is `false` **and** `accessType` is `owner`, because only the owner can change the aircraft's plan. Otherwise the field is omitted entirely (not returned as `null`). |
 
 Example response when the aircraft is eligible for borescope analysis:
 
 ```json
-[{ "registration_no": "N123", "id": 15678, "eligibleForBorescopeAnalysis": true }]
+[{ "registration_no": "N123", "id": 15678, "accessType": "owner", "eligibleForBorescopeAnalysis": true }]
 ```
 
 Example response when the aircraft is not eligible:
@@ -76,10 +85,38 @@ Example response when the aircraft is not eligible:
 [{
   "registration_no": "N123",
   "id": 15678,
+  "accessType": "owner",
   "eligibleForBorescopeAnalysis": false,
   "serviceUpgradeUrl": "https://apps.savvyaviation.com/account/plan/15678"
 }]
 ```
+
+Example response with `include_shared=true`:
+
+```json
+[
+  { "registration_no": "N123", "id": 15678, "accessType": "owner", "eligibleForBorescopeAnalysis": true },
+  { "registration_no": "N456", "id": 20411, "accessType": "co_owner", "eligibleForBorescopeAnalysis": false },
+  { "registration_no": "N789", "id": 31002, "accessType": "service_center", "eligibleForBorescopeAnalysis": false }
+]
+```
+
+### Shared aircraft
+
+With `include_shared=true`, the response also lists aircraft the user does not own but can upload borescope images to. `accessType` says how the user has access:
+
+| `accessType` | Meaning |
+|---|---|
+| `owner` | The user is the aircraft's owner (primary contact). |
+| `co_owner` | The owner added the user as a co-owner and left the "Upload borescope images" permission on. |
+| `service_center` | The user is a technician at a service center that the owner shared the aircraft with, or the service center created the aircraft itself. |
+| `shared` | The owner shared the aircraft with the user (an older form of sharing) and granted the "Upload borescope images" permission. |
+
+An aircraft is listed once. If the user has access in more than one way, a co-owner or `shared` grant takes precedence over a service-center grant.
+
+Shared aircraft are listed only when the user can upload borescope images to them. A co-owner whose "Upload borescope images" permission is off, or whose invitation is still pending, does not see the aircraft. The [Borescope Image Management API](#borescope-image-management-api) endpoints accept every aircraft in this list.
+
+Shared aircraft are for borescope uploads only. The [File Upload API](#file-upload-api) for engine data still accepts only aircraft the user owns, and returns 403 for a shared aircraft. That is why `include_shared` is opt-in.
 
 ## File Upload API
 
@@ -184,7 +221,9 @@ The borescope inspection workflow follows a 12-view per cylinder protocol:
 
 ### 1. Get User's Aircraft
 
-Use the existing [Get Aircraft](#get-aircraft-endpoint) endpoint to retrieve the list of aircraft the authenticated user can access.
+Use the existing [Get Aircraft](#get-aircraft-endpoint) endpoint with `include_shared=true` to retrieve every aircraft the authenticated user can upload borescope images to. That includes aircraft shared with them as a co-owner or through their service center, not just aircraft they own.
+
+The borescope endpoints below accept any aircraft in that list. For an aircraft the user cannot upload borescope images to, they return 403 with error code `forbidden`.
 
 ---
 

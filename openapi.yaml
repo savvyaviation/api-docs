@@ -12,7 +12,11 @@ paths:
     post:
       operationId: getAircraft
       summary: Get user's aircraft
-      description: Retrieve list of aircraft the authenticated user can access.
+      description: >
+        Retrieve the aircraft the authenticated user owns. With `include_shared=true`,
+        also retrieve the aircraft shared with the user that they can upload borescope
+        images to. Owned aircraft come first, followed by shared aircraft ordered by
+        registration.
       requestBody:
         required: true
         content:
@@ -24,6 +28,16 @@ paths:
                 token:
                   type: string
                   description: API authentication token
+                include_shared:
+                  type: string
+                  enum: ['true', 'false']
+                  default: 'false'
+                  description: >
+                    Set to `true` to also list aircraft shared with the user (as a
+                    co-owner, through their service center, or through an older
+                    per-user share) that the user can upload borescope images to.
+                    Opt-in because the engine-data upload endpoint still accepts
+                    only aircraft the user owns.
       responses:
         '200':
           description: List of aircraft
@@ -33,7 +47,7 @@ paths:
                 type: array
                 items:
                   type: object
-                  required: [id, registration_no, eligibleForBorescopeAnalysis]
+                  required: [id, registration_no, accessType, eligibleForBorescopeAnalysis]
                   properties:
                     id:
                       type: integer
@@ -41,24 +55,39 @@ paths:
                     registration_no:
                       type: string
                       description: Aircraft registration number
+                    accessType:
+                      type: string
+                      enum: [owner, co_owner, service_center, shared]
+                      description: >
+                        How the user has access to this aircraft. `owner`: the user is
+                        the owner (primary contact). `co_owner`: the owner added the user
+                        as a co-owner with the "Upload borescope images" permission on.
+                        `service_center`: the user is a technician at a service center
+                        the aircraft was shared with, or that created the aircraft.
+                        `shared`: the owner shared the aircraft with the user through the
+                        older per-user share and granted "Upload borescope images". Each
+                        aircraft is listed once; a co-owner or `shared` grant takes
+                        precedence over a service-center grant.
                     eligibleForBorescopeAnalysis:
                       type: boolean
                       description: >
-                        Whether this aircraft is currently covered by a subscription plan
-                        that includes borescope image analysis (Analysis, QA, MX, or Prebuy).
-                        Clients should use this flag to decide whether to surface the
-                        "Request Analysis" action in their UI and to prompt the user to
-                        upgrade when it is `false`. Recomputed on every call, so the value
-                        reflects the aircraft's eligibility at request time.
+                        Whether the user can currently request borescope image analysis
+                        on this aircraft. Requires a subscription plan on the aircraft that
+                        includes borescope analysis (Analysis, QA, MX, or Prebuy). Also
+                        `false` when the user's account type cannot request borescope
+                        analysis, which today includes service-center technicians.
+                        Recomputed on every call, so the value reflects eligibility at
+                        request time.
                     serviceUpgradeUrl:
                       type: string
                       format: uri
                       description: >
                         Deep link to the SavvyAviation web app plan page for this specific
                         aircraft, where the owner can upgrade to a subscription that
-                        includes borescope analysis. Present if and only if
-                        `eligibleForBorescopeAnalysis` is `false`; when eligibility is
-                        `true`, the field is omitted entirely (not returned as `null`).
+                        includes borescope analysis. Present only when
+                        `eligibleForBorescopeAnalysis` is `false` and `accessType` is
+                        `owner`, because only the owner can change the aircraft's plan.
+                        Otherwise the field is omitted entirely (not returned as `null`).
                       example: https://apps.savvyaviation.com/account/plan/1234
               examples:
                 eligible:
@@ -66,14 +95,31 @@ paths:
                   value:
                     - id: 1234
                       registration_no: N12345
+                      accessType: owner
                       eligibleForBorescopeAnalysis: true
                 ineligible:
                   summary: Aircraft not eligible (includes upgrade URL)
                   value:
                     - id: 5678
                       registration_no: N67890
+                      accessType: owner
                       eligibleForBorescopeAnalysis: false
                       serviceUpgradeUrl: https://apps.savvyaviation.com/account/plan/5678
+                includeShared:
+                  summary: With include_shared=true
+                  value:
+                    - id: 1234
+                      registration_no: N12345
+                      accessType: owner
+                      eligibleForBorescopeAnalysis: true
+                    - id: 20411
+                      registration_no: N456
+                      accessType: co_owner
+                      eligibleForBorescopeAnalysis: false
+                    - id: 31002
+                      registration_no: N789
+                      accessType: service_center
+                      eligibleForBorescopeAnalysis: false
         '401':
           $ref: '#/components/responses/Unauthorized'
 
